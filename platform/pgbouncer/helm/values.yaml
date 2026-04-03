@@ -1,0 +1,24 @@
+image:
+  repository: bitnami/pgbouncer
+  tag: "1.21.0"
+
+postgresql:
+  host: central-pg
+  port: 5432
+  database: eventhub_central
+  username: platform_admin
+  password: changeme-in-production
+
+pooling:
+  poolMode: transaction
+  defaultPoolSize: 20
+  maxClientConn: 200
+  maxDbConnections: 50
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi

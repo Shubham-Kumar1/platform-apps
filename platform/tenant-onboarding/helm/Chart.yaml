@@ -1,0 +1,4 @@
+apiVersion: v2
+name: tenant-onboarding
+description: Provisions a new tenant - namespace, quotas, RBAC, DB, network policies
+version: 1.0.0

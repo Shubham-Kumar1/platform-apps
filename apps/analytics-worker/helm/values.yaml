@@ -1,0 +1,29 @@
+replicaCount: 1
+image:
+  repository: localhost:5000/analytics-worker
+  tag: latest
+workerConcurrency: 4
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    cpu: "1"
+    memory: 512Mi
+redis:
+  image: redis:7-alpine
+  storageSize: 2Gi
+  maxMemory: 256mb
+mysql:
+  host: event-service-mysql
+  port: 3306
+  user: root
+  password: changeme-mysql-root
+  database: events
+mongodb:
+  uri: "mongodb://live-dashboard-mongodb:27017/live_dashboard"
+centralDb:
+  secretName: central-db-credentials
+pdb:
+  enabled: true
+  minAvailable: 1

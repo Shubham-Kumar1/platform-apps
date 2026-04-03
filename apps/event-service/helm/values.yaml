@@ -1,0 +1,38 @@
+replicaCount: 2
+
+image:
+  repository: localhost:5000/event-service
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: true
+  className: nginx
+  host: events.eventhub.local
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilization: 70
+
+mysql:
+  image: mysql:8.0
+  storageSize: 10Gi
+  rootPassword: changeme-mysql-root
+  database: events
+
+centralDb:
+  secretName: central-db-credentials

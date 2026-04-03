@@ -1,0 +1,37 @@
+tenant:
+  name: alpha
+  displayName: "Acme Corp"
+  planTier: pro
+
+namespace:
+  labels:
+    team: engineering
+    environment: production
+
+resourceQuota:
+  cpu: "4"
+  memory: 8Gi
+  pods: "20"
+  services: "10"
+  persistentvolumeclaims: "5"
+
+eventService:
+  replicaCount: 2
+  mysql:
+    storageSize: 10Gi
+
+liveDashboard:
+  replicaCount: 2
+  mongodb:
+    storageSize: 10Gi
+
+analyticsWorker:
+  replicaCount: 1
+  workerConcurrency: 4
+  redis:
+    storageSize: 2Gi
+
+centralDb:
+  host: pgbouncer.platform-services.svc.cluster.local
+  port: 5432
+  database: eventhub_central

@@ -1,0 +1,4 @@
+apiVersion: v2
+name: live-dashboard
+description: EventHub Live Dashboard - Node.js + MongoDB + WebSocket
+version: 1.0.0

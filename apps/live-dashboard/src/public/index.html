@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EventHub Live Dashboard</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:-apple-system,sans-serif;background:#0d1117;color:#e6edf3}
+    .header{background:#161b22;padding:20px 32px;border-bottom:1px solid #30363d;display:flex;justify-content:space-between;align-items:center}
+    .header h1{font-size:22px} .header h1 span{color:#58a6ff}
+    .container{display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:20px 32px}
+    .panel{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:16px;max-height:70vh;overflow-y:auto}
+    .panel h2{font-size:16px;margin-bottom:12px;color:#58a6ff}
+    .feed-item{padding:10px 0;border-bottom:1px solid #21262d}
+    .feed-item .time{font-size:11px;color:#8b949e}
+    .feed-item.milestone{border-left:3px solid #d29922;padding-left:12px}
+    .feed-item.announcement{border-left:3px solid #f85149;padding-left:12px}
+    #eventIdInput{background:#0d1117;border:1px solid #30363d;color:#e6edf3;padding:6px 12px;border-radius:4px}
+    button{background:#238636;color:white;border:none;padding:6px 16px;border-radius:4px;cursor:pointer}
+    .stat .number{font-size:28px;font-weight:bold;color:#3fb950}
+    .stat .label{font-size:12px;color:#8b949e}
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1><span>EventHub</span> Live Dashboard</h1>
+    <div><input id="eventIdInput" placeholder="Event ID"><button onclick="joinEvent()">Watch</button></div>
+  </div>
+  <div style="padding:16px 32px;display:flex;gap:32px">
+    <div class="stat"><div class="number" id="totalCheckins">0</div><div class="label">Check-ins</div></div>
+  </div>
+  <div class="container">
+    <div class="panel"><h2>Live Feed</h2><div id="feedList"></div></div>
+    <div class="panel"><h2>Recent Check-ins</h2><div id="checkinList"></div></div>
+  </div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    let currentEvent = null;
+    function joinEvent(){
+      const id=document.getElementById('eventIdInput').value.trim();
+      if(!id)return;
+      if(currentEvent)socket.emit('leave-event',currentEvent);
+      currentEvent=id; socket.emit('join-event',id);
+      fetch('/api/feed/'+id).then(r=>r.json()).then(e=>e.reverse().forEach(addFeedItem));
+      fetch('/api/checkins/'+id+'/count').then(r=>r.json()).then(d=>{document.getElementById('totalCheckins').textContent=d.count});
+    }
+    socket.on('new-checkin',d=>{addCheckinItem(d.checkin);addFeedItem(d.feedEntry);
+      const el=document.getElementById('totalCheckins');el.textContent=parseInt(el.textContent)+1});
+    socket.on('milestone',e=>addFeedItem(e));
+    function addFeedItem(e){const d=document.createElement('div');d.className='feed-item '+(e.type||'');
+      d.innerHTML='<div class="time">'+new Date(e.timestamp).toLocaleTimeString()+'</div><div>'+e.message+'</div>';
+      document.getElementById('feedList').prepend(d)}
+    function addCheckinItem(c){const d=document.createElement('div');d.className='feed-item';
+      d.innerHTML='<div class="time">'+new Date(c.timestamp).toLocaleTimeString()+'</div><div>'+(c.userName||'?')+' — '+(c.orgName||'')+'</div>';
+      document.getElementById('checkinList').prepend(d)}
+  </script>
+</body>
+</html>

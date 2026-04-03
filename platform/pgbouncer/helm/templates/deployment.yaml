@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: pgbouncer
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          ports:
+            - containerPort: 6432
+          env:
+            - name: PGBOUNCER_DATABASE
+              value: {{ .Values.postgresql.database }}
+            - name: POSTGRESQL_HOST
+              value: {{ .Values.postgresql.host }}
+            - name: POSTGRESQL_PORT
+              value: "{{ .Values.postgresql.port }}"
+            - name: POSTGRESQL_USERNAME
+              value: {{ .Values.postgresql.username }}
+            - name: POSTGRESQL_PASSWORD
+              value: {{ .Values.postgresql.password }}
+          resources:
+            requests:
+              cpu: {{ .Values.resources.requests.cpu }}
+              memory: {{ .Values.resources.requests.memory }}
+            limits:
+              cpu: {{ .Values.resources.limits.cpu }}
+              memory: {{ .Values.resources.limits.memory }}
+          livenessProbe:
+            tcpSocket:
+              port: 6432
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 6432
+            initialDelaySeconds: 5
+            periodSeconds: 5

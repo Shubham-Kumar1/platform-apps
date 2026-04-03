@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}
+        component: api
+    spec:
+      serviceAccountName: {{ .Release.Namespace }}-sa
+      initContainers:
+        - name: wait-mysql
+          image: busybox:1.36
+          command: ["sh", "-c", "until nc -z {{ .Release.Name }}-mysql 3306; do sleep 2; done"]
+        - name: wait-central-db
+          image: busybox:1.36
+          command: ["sh", "-c", "until nc -z pgbouncer.platform-services.svc.cluster.local 5432; do sleep 2; done"]
+      containers:
+        - name: event-service
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          ports:
+            - containerPort: 8080
+          env:
+            - name: PORT
+              value: "8080"
+            - name: MYSQL_DSN
+              value: "root:{{ .Values.mysql.rootPassword }}@tcp({{ .Release.Name }}-mysql:3306)/{{ .Values.mysql.database }}?parseTime=true"
+            - name: CENTRAL_DB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.centralDb.secretName }}
+                  key: CENTRAL_DB_URL
+          resources:
+            requests:
+              cpu: {{ .Values.resources.requests.cpu }}
+              memory: {{ .Values.resources.requests.memory }}
+            limits:
+              cpu: {{ .Values.resources.limits.cpu }}
+              memory: {{ .Values.resources.limits.memory }}
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5

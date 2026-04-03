@@ -1,0 +1,35 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ .Release.Name }}-mysql-backup
+  namespace: {{ .Release.Namespace }}
+spec:
+  schedule: "0 2 * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: backup
+              image: mysql:8.0
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+                  mysqldump -h {{ .Release.Name }}-mysql \
+                    -u root -p$MYSQL_ROOT_PASSWORD \
+                    --single-transaction {{ .Values.mysql.database }} \
+                    | gzip > /backups/events_$TIMESTAMP.sql.gz
+                  find /backups -name "*.sql.gz" -mtime +7 -delete
+              env:
+                - name: MYSQL_ROOT_PASSWORD
+                  value: {{ .Values.mysql.rootPassword }}
+              volumeMounts:
+                - name: backup-storage
+                  mountPath: /backups
+          volumes:
+            - name: backup-storage
+              emptyDir: {}

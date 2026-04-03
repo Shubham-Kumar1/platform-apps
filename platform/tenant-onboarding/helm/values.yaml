@@ -1,0 +1,35 @@
+tenant:
+  name: alpha
+  displayName: "Tenant Alpha"
+  planTier: pro
+
+namespace:
+  labels:
+    team: alpha
+    environment: production
+
+resourceQuota:
+  cpu: "4"
+  memory: 8Gi
+  pods: "20"
+  services: "10"
+  persistentvolumeclaims: "5"
+
+limitRange:
+  default:
+    cpu: 500m
+    memory: 512Mi
+  defaultRequest:
+    cpu: 100m
+    memory: 128Mi
+  max:
+    cpu: "2"
+    memory: 2Gi
+
+centralDb:
+  host: pgbouncer.platform-services.svc.cluster.local
+  port: 5432
+  database: eventhub_central
+
+networkPolicy:
+  enabled: true

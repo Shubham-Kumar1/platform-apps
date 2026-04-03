@@ -1,0 +1,37 @@
+tenant:
+  name: beta
+  displayName: "Stark Industries"
+  planTier: enterprise
+
+namespace:
+  labels:
+    team: platform
+    environment: production
+
+resourceQuota:
+  cpu: "8"
+  memory: 16Gi
+  pods: "40"
+  services: "20"
+  persistentvolumeclaims: "10"
+
+eventService:
+  replicaCount: 3
+  mysql:
+    storageSize: 20Gi
+
+liveDashboard:
+  replicaCount: 3
+  mongodb:
+    storageSize: 20Gi
+
+analyticsWorker:
+  replicaCount: 2
+  workerConcurrency: 8
+  redis:
+    storageSize: 5Gi
+
+centralDb:
+  host: pgbouncer.platform-services.svc.cluster.local
+  port: 5432
+  database: eventhub_central

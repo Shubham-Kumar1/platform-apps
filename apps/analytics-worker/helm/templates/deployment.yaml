@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}
+        component: worker
+    spec:
+      serviceAccountName: {{ .Release.Namespace }}-sa
+      terminationGracePeriodSeconds: 120
+      initContainers:
+        - name: wait-redis
+          image: busybox:1.36
+          command: ["sh", "-c", "until nc -z {{ .Release.Name }}-redis 6379; do sleep 2; done"]
+      containers:
+        - name: worker
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          command: ["python", "-m", "worker.main"]
+          env:
+            - name: REDIS_URL
+              value: "redis://{{ .Release.Name }}-redis:6379/0"
+            - name: WORKER_CONCURRENCY
+              value: {{ .Values.workerConcurrency | quote }}
+            - name: MYSQL_HOST
+              value: {{ .Values.mysql.host }}
+            - name: MYSQL_PORT
+              value: {{ .Values.mysql.port | quote }}
+            - name: MYSQL_USER
+              value: {{ .Values.mysql.user }}
+            - name: MYSQL_PASSWORD
+              value: {{ .Values.mysql.password }}
+            - name: MYSQL_DB
+              value: {{ .Values.mysql.database }}
+            - name: MONGO_URI
+              value: {{ .Values.mongodb.uri }}
+            - name: CENTRAL_DB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.centralDb.secretName }}
+                  key: CENTRAL_DB_URL
+          resources:
+            requests:
+              cpu: {{ .Values.resources.requests.cpu }}
+              memory: {{ .Values.resources.requests.memory }}
+            limits:
+              cpu: {{ .Values.resources.limits.cpu }}
+              memory: {{ .Values.resources.limits.memory }}
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "kill -TERM 1 && sleep 90"]

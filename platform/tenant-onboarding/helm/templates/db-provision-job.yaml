@@ -1,0 +1,94 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-provision-{{ .Values.tenant.name }}
+  namespace: platform-services
+  annotations:
+    helm.sh/hook: post-install
+    helm.sh/hook-weight: "0"
+    helm.sh/hook-delete-policy: hook-succeeded
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: provision
+          image: postgres:16-alpine
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              echo "Provisioning database for tenant: {{ .Values.tenant.name }}"
+              TENANT_USER="ro_tenant_{{ .Values.tenant.name }}"
+              TENANT_PASS=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 24)
+
+              PGPASSWORD=$POSTGRES_PASSWORD psql -h $PG_HOST -U $PG_USER -d $PG_DB <<EOF
+              DO \$\$
+              BEGIN
+                IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '$TENANT_USER') THEN
+                  CREATE ROLE $TENANT_USER WITH LOGIN PASSWORD '$TENANT_PASS';
+                END IF;
+              END
+              \$\$;
+              GRANT CONNECT ON DATABASE $PG_DB TO $TENANT_USER;
+              GRANT USAGE ON SCHEMA public TO $TENANT_USER;
+              GRANT SELECT ON users, organizations, org_memberships, api_keys TO $TENANT_USER;
+              EOF
+
+              kubectl create secret generic central-db-credentials \
+                --namespace=tenant-{{ .Values.tenant.name }} \
+                --from-literal=CENTRAL_DB_HOST={{ .Values.centralDb.host }} \
+                --from-literal=CENTRAL_DB_PORT={{ .Values.centralDb.port | quote }} \
+                --from-literal=CENTRAL_DB_NAME={{ .Values.centralDb.database }} \
+                --from-literal=CENTRAL_DB_USER=$TENANT_USER \
+                --from-literal=CENTRAL_DB_PASSWORD=$TENANT_PASS \
+                --from-literal=CENTRAL_DB_URL="postgresql://$TENANT_USER:$TENANT_PASS@{{ .Values.centralDb.host }}:{{ .Values.centralDb.port }}/{{ .Values.centralDb.database }}?sslmode=disable" \
+                --dry-run=client -o yaml | kubectl apply -f -
+
+              echo "Tenant {{ .Values.tenant.name }} provisioned!"
+          env:
+            - name: PG_HOST
+              value: central-pg.platform-services.svc.cluster.local
+            - name: PG_USER
+              value: platform_admin
+            - name: PG_DB
+              value: eventhub_central
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: central-pg-secret
+                  key: POSTGRES_PASSWORD
+      serviceAccountName: db-provisioner
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: db-provisioner
+  namespace: platform-services
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: db-provisioner-role
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["create", "update", "patch", "get"]
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: db-provisioner-binding
+subjects:
+  - kind: ServiceAccount
+    name: db-provisioner
+    namespace: platform-services
+roleRef:
+  kind: ClusterRole
+  name: db-provisioner-role
+  apiGroup: rbac.authorization.k8s.io

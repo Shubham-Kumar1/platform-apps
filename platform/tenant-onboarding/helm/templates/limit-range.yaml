@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: tenant-{{ .Values.tenant.name }}-limits
+  namespace: tenant-{{ .Values.tenant.name }}
+spec:
+  limits:
+    - type: Container
+      default:
+        cpu: {{ .Values.limitRange.default.cpu }}
+        memory: {{ .Values.limitRange.default.memory }}
+      defaultRequest:
+        cpu: {{ .Values.limitRange.defaultRequest.cpu }}
+        memory: {{ .Values.limitRange.defaultRequest.memory }}
+      max:
+        cpu: {{ .Values.limitRange.max.cpu }}
+        memory: {{ .Values.limitRange.max.memory }}

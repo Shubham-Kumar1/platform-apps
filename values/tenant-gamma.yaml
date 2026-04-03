@@ -1,0 +1,37 @@
+tenant:
+  name: gamma
+  displayName: "Wayne Enterprises"
+  planTier: free
+
+namespace:
+  labels:
+    team: devops
+    environment: staging
+
+resourceQuota:
+  cpu: "2"
+  memory: 4Gi
+  pods: "10"
+  services: "5"
+  persistentvolumeclaims: "3"
+
+eventService:
+  replicaCount: 1
+  mysql:
+    storageSize: 5Gi
+
+liveDashboard:
+  replicaCount: 1
+  mongodb:
+    storageSize: 5Gi
+
+analyticsWorker:
+  replicaCount: 1
+  workerConcurrency: 2
+  redis:
+    storageSize: 1Gi
+
+centralDb:
+  host: pgbouncer.platform-services.svc.cluster.local
+  port: 5432
+  database: eventhub_central

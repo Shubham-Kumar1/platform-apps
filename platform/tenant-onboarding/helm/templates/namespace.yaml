@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tenant-{{ .Values.tenant.name }}
+  labels:
+    app.kubernetes.io/managed-by: platform-team
+    tenant: {{ .Values.tenant.name }}
+    plan-tier: {{ .Values.tenant.planTier }}
+    {{- range $key, $val := .Values.namespace.labels }}
+    {{ $key }}: {{ $val }}
+    {{- end }}

@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-beat
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-beat
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-beat
+    spec:
+      containers:
+        - name: beat
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          command: ["celery", "-A", "worker.main", "beat", "--loglevel=info"]
+          env:
+            - name: REDIS_URL
+              value: "redis://{{ .Release.Name }}-redis:6379/0"
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi

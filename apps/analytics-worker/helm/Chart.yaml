@@ -1,0 +1,4 @@
+apiVersion: v2
+name: analytics-worker
+description: EventHub Analytics Worker - Python + Celery + Redis
+version: 1.0.0

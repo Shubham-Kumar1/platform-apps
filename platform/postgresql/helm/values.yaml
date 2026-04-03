@@ -1,0 +1,28 @@
+replicaCount: 1
+
+image:
+  repository: postgres
+  tag: "16-alpine"
+  pullPolicy: IfNotPresent
+
+auth:
+  database: eventhub_central
+  username: platform_admin
+  password: changeme-in-production
+  postgresPassword: changeme-postgres
+
+storage:
+  size: 10Gi
+  storageClass: ""
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: "1"
+    memory: 1Gi
+
+readReplica:
+  enabled: false
+  replicaCount: 1
